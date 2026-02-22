@@ -1,12 +1,92 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Bookmark, Map, Globe, ChevronRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useRecommendations } from "@/hooks/use-recommendations";
+import { RecommendationCard } from "@/components/RecommendationCard";
+import { DetailDrawer } from "@/components/DetailDrawer";
+import type { Recommendation } from "@/types/recommendation";
+
+const stats = [
+  { label: "Saved Spots", value: "48", icon: Bookmark, color: "text-primary" },
+  { label: "Active Itineraries", value: "3", icon: Map, color: "text-accent" },
+  { label: "Countries Visited", value: "12", icon: Globe, color: "text-primary" },
+];
 
 const Index = () => {
+  const { data: recommendations, isLoading } = useRecommendations();
+  const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const openDrawer = (rec: Recommendation) => {
+    setSelectedRec(rec);
+    setDrawerOpen(true);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="space-y-8">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {stats.map((stat) => (
+          <Card key={stat.label} className="border-border">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              </div>
+              <div>
+                <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* Recently Added */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-display font-bold text-foreground">Recently Added</h2>
+          <a href="/library" className="text-sm text-primary hover:underline flex items-center gap-1">
+            View all <ChevronRight className="h-3 w-3" />
+          </a>
+        </div>
+        {isLoading ? (
+          <div className="flex gap-4 overflow-hidden">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 w-64 shrink-0 rounded-lg bg-secondary animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {recommendations?.slice(0, 5).map((rec) => (
+              <div key={rec.id} className="w-64 shrink-0">
+                <RecommendationCard recommendation={rec} onClick={() => openDrawer(rec)} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Discover */}
+      <div>
+        <h2 className="text-lg font-display font-bold text-foreground mb-4">Discover Your Library</h2>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-64 rounded-lg bg-secondary animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recommendations?.map((rec) => (
+              <RecommendationCard key={rec.id} recommendation={rec} onClick={() => openDrawer(rec)} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <DetailDrawer recommendation={selectedRec} open={drawerOpen} onOpenChange={setDrawerOpen} />
     </div>
   );
 };
