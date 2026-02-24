@@ -1,66 +1,52 @@
 
 
-# Tripost — Travel Recommendations App
+# Database Schema Update from PRD
 
-A travel spot library app inspired by the provided screenshots, built with React, Tailwind CSS, shadcn-ui, and Supabase.
+## Overview
+Align the existing `recommendations` table with the PRD schema, create a new `scrape_jobs` table, and update the TypeScript types and Library page accordingly.
 
----
+## What Changes
 
-## Pages & Layout
+### 1. Database Migration
 
-### Global Layout
-- **Sidebar navigation** (collapsible) with links: Dashboard, Library, Itinerary, Settings, Trash
-- Tripost branding with teal/cyan accent color scheme matching the screenshots
-- Top bar with search input, notification bell, and user avatar
-- Floating "+" add button in bottom-right corner
+**Update `recommendations` table** to add PRD columns:
+- Add `destination` (TEXT) -- normalized "City, Country" (maps to current `location`)
+- Add `name` (TEXT) -- the PRD's primary name field (maps to current `title`)
+- Add `tips` (TEXT, nullable)
+- Add `price_range` (TEXT, nullable) -- PRD equivalent of current `cost_range`
+- Add `video_timestamp` (TEXT, nullable)
+- Populate `destination` from existing `location` values and `name` from existing `title` values so no data is lost
+- Keep existing columns (`title`, `location`, `cost_range`, etc.) to avoid breaking anything -- they can be deprecated later
 
-### 1. Dashboard (`/`)
-- Three stat cards: Saved Spots, Active Itineraries, Countries Visited
-- "Recently Added" horizontal carousel of recommendation cards
-- "Discover Your Library" grid section with category/sort filters
-- Cards show image, title, source badge, and "saved X ago" timestamp
+**Create `scrape_jobs` table**:
+- `id` UUID primary key
+- `url` TEXT NOT NULL
+- `status` TEXT NOT NULL DEFAULT 'QUEUED' (QUEUED, SCRAPING, TRANSCRIBING, EXTRACTING, COMPLETE, FAILED)
+- `error_msg` TEXT nullable
+- `recs_added` INT DEFAULT 0
+- `created_at` TIMESTAMPTZ DEFAULT now()
+- `updated_at` TIMESTAMPTZ DEFAULT now()
+- RLS enabled with public read/insert policies (matching current pattern -- no auth yet)
 
-### 2. Library (`/library`)
-- Left filter panel: destination tags, category dropdown, tag chips, price range selector
-- Grid/List toggle view
-- Recommendation cards fetched from Supabase `recommendations` table
-- Each card: image, category badge, location, title, tags, description snippet, "View Source" button
-- **Clicking a card opens the Detail Drawer**
+Note: `user_id` columns from the PRD are omitted for now since the app has no authentication. They will be added when auth is implemented.
 
-### 3. Detail Drawer (overlay)
-- Full-width hero image with category badges and title overlay
-- Location pin with city/country
-- "About this destination" description
-- Info chips: Opening Hours, Avg. Cost, Rating, Crowd Level
-- Status indicator (Open/Closed)
-- Map placeholder with address and "Open in Google Maps" link
-- Action buttons: "Visit Source" and "+ Add to Itinerary"
+### 2. Update TypeScript Types
 
-### 4. Itinerary (`/itinerary`)
-- Left panel: destination input, trip duration slider, travel style tags (Budget, Foodie, Adventure, etc.), "Generate Itinerary" button, saved places thumbnails
-- Right panel: day-by-day timeline with morning/afternoon sections
-- Each activity: thumbnail, title, description, duration & cost badges, remove button
+Update `src/types/recommendation.ts` to include the new fields (`destination`, `name`, `tips`, `price_range`, `video_timestamp`).
 
-### 5. Settings (`/settings`)
-- Profile form: photo, name, username, bio
-- Travel preferences: home airport, currency, eco-friendly toggle, public sharing toggle
-- Connected services section (static/mock)
-- Deactivate account section
+Create `src/types/scrape-job.ts` with the `ScrapeJob` interface.
 
----
+### 3. Update Library Page
 
-## Supabase Backend
+The Library page already fetches from the database via the `useRecommendations` hook -- no mock data is in use. The filter logic will be updated to also search the new `destination` and `name` fields, and the destination tags will be derived dynamically from the actual data instead of a hardcoded list.
 
-- **`recommendations` table** with columns: id, title, description, image_url, category, location, tags, source_url, source_type, rating, cost_range, opening_hours, created_at
-- Data fetched via Supabase client with React Query
-- Seed with sample travel data for demo purposes
+### 4. Files Modified
 
----
-
-## Design System
-- Primary accent: **teal/cyan** (`#00D4AA` style)
-- Secondary accent: **orange** for action buttons (Visit Source, Save Profile)
-- Light warm background tones
-- Rounded cards with subtle shadows
-- Clean typography with bold headings
+| File | Change |
+|---|---|
+| New migration SQL | Add columns to `recommendations`, create `scrape_jobs` table |
+| `src/types/recommendation.ts` | Add new optional fields |
+| `src/types/scrape-job.ts` (new) | `ScrapeJob` interface |
+| `src/hooks/use-recommendations.ts` | No change needed (already fetches `*`) |
+| `src/pages/Library.tsx` | Derive destination tags from data, update filter logic |
 
