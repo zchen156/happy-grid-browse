@@ -1,4 +1,4 @@
-import { MapPin, Clock, DollarSign, Star, Users, ExternalLink, Plus } from "lucide-react";
+import { MapPin, Clock, DollarSign, Star, Users, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,19 @@ interface DetailDrawerProps {
   recommendation: Recommendation | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete?: (id: string) => void | Promise<void>;
 }
 
-export function DetailDrawer({ recommendation, open, onOpenChange }: DetailDrawerProps) {
+export function DetailDrawer({ recommendation, open, onOpenChange, onDelete }: DetailDrawerProps) {
   const navigate = useNavigate();
   if (!recommendation) return null;
+
+  const handleDelete = async () => {
+    if (onDelete) {
+      await onDelete(recommendation.id);
+      onOpenChange(false);
+    }
+  };
 
   const isOpen = (() => {
     if (!recommendation.opening_hours) return null;
@@ -139,7 +147,18 @@ export function DetailDrawer({ recommendation, open, onOpenChange }: DetailDrawe
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-wrap gap-3 pt-2">
+            {onDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                className="gap-1"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
             {recommendation.source_url && (
               <Button
                 variant="outline"

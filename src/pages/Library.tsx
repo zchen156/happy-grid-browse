@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Grid3X3, List, Search, SlidersHorizontal } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Grid3X3, List, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { DetailDrawer } from "@/components/DetailDrawer";
+import { deleteRecommendations } from "@/lib/api";
 import type { Recommendation } from "@/types/recommendation";
 
 const categories = ["All", "Restaurant", "Café", "Attraction", "Activity", "Experience", "Market"];
 
 const LibraryPage = () => {
+  const queryClient = useQueryClient();
   const { data: recommendations, isLoading } = useRecommendations();
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -19,6 +22,47 @@ const LibraryPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    setIsDeleting(true);
+    try {
+      await deleteRecommendations(Array.from(selectedIds));
+      queryClient.invalidateQueries({ queryKey: ["recommendations"] });
+      setSelectedIds(new Set());
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteOne = async (id: string) => {
+    try {
+      await deleteRecommendations([id]);
+      queryClient.invalidateQueries({ queryKey: ["recommendations"] });
+      if (selectedRec?.id === id) {
+        setSelectedRec(null);
+        setDrawerOpen(false);
+      }
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } catch {
+      // leave list as-is on error
+    }
+  };
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -86,7 +130,7 @@ const LibraryPage = () => {
 
       {/* Main content */}
       <div className="flex-1 space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -96,23 +140,37 @@ const LibraryPage = () => {
               className="pl-9"
             />
           </div>
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setViewMode("grid")}
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setViewMode("list")}
-            >
-              <List className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteSelected}
+                disabled={isDeleting}
+                className="gap-1"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete selected ({selectedIds.size})
+              </Button>
+            )}
+            <div className="flex items-center gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setViewMode("grid")}
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -132,6 +190,9 @@ const LibraryPage = () => {
                   setSelectedRec(rec);
                   setDrawerOpen(true);
                 }}
+                onDelete={handleDeleteOne}
+                selected={selectedIds.has(rec.id)}
+                onSelect={() => toggleSelect(rec.id)}
               />
             ))}
           </div>
@@ -144,7 +205,12 @@ const LibraryPage = () => {
         )}
       </div>
 
-      <DetailDrawer recommendation={selectedRec} open={drawerOpen} onOpenChange={setDrawerOpen} />
+      <DetailDrawer
+        recommendation={selectedRec}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onDelete={handleDeleteOne}
+      />
     </div>
   );
 };

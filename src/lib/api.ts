@@ -103,6 +103,13 @@ export async function fetchDestinations(): Promise<Record<string, number>> {
   return apiFetch<Record<string, number>>("/api/destinations");
 }
 
+export async function deleteRecommendations(ids: string[]): Promise<{ removed: number }> {
+  return apiFetch<{ removed: number }>("/api/recommendations", {
+    method: "DELETE",
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export async function scrapeUrls(
   urls: string[],
   onDuplicate: "replace" | "skip" = "skip",

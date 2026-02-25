@@ -1,17 +1,28 @@
-import { MapPin, ExternalLink } from "lucide-react";
+import { MapPin, ExternalLink, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Recommendation } from "@/types/recommendation";
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
   onClick: () => void;
+  onDelete?: (id: string) => void;
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
-export function RecommendationCard({ recommendation, onClick }: RecommendationCardProps) {
+export function RecommendationCard({
+  recommendation,
+  onClick,
+  onDelete,
+  selected,
+  onSelect,
+}: RecommendationCardProps) {
   return (
     <Card
-      className="overflow-hidden cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 border-border"
+      className={`overflow-hidden cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 border-border ${selected ? "ring-2 ring-primary" : ""}`}
       onClick={onClick}
     >
       <div className="relative h-40">
@@ -27,6 +38,32 @@ export function RecommendationCard({ recommendation, onClick }: RecommendationCa
           <Badge variant="secondary" className="absolute top-3 right-3 text-xs">
             {recommendation.source_type}
           </Badge>
+        )}
+        {onSelect != null && (
+          <div
+            className="absolute top-3 left-10 flex items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={selected}
+              onCheckedChange={() => onSelect()}
+              aria-label="Select"
+            />
+          </div>
+        )}
+        {onDelete != null && (
+          <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-3 right-3 h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(recommendation.id);
+            }}
+            aria-label="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         )}
       </div>
       <CardContent className="p-4 space-y-2">

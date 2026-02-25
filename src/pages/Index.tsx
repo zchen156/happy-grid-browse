@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Bookmark, Map, Globe, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { DetailDrawer } from "@/components/DetailDrawer";
+import { deleteRecommendations } from "@/lib/api";
 import type { Recommendation } from "@/types/recommendation";
 
 const Index = () => {
+  const queryClient = useQueryClient();
   const { data: recommendations, isLoading } = useRecommendations();
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -14,6 +17,19 @@ const Index = () => {
   const openDrawer = (rec: Recommendation) => {
     setSelectedRec(rec);
     setDrawerOpen(true);
+  };
+
+  const handleDeleteOne = async (id: string) => {
+    try {
+      await deleteRecommendations([id]);
+      queryClient.invalidateQueries({ queryKey: ["recommendations"] });
+      if (selectedRec?.id === id) {
+        setSelectedRec(null);
+        setDrawerOpen(false);
+      }
+    } catch {
+      // leave list as-is on error
+    }
   };
 
   const stats = useMemo(() => {
@@ -67,7 +83,11 @@ const Index = () => {
           <div className="flex gap-4 overflow-x-auto pb-2">
             {recommendations?.slice(0, 5).map((rec) => (
               <div key={rec.id} className="w-64 shrink-0">
-                <RecommendationCard recommendation={rec} onClick={() => openDrawer(rec)} />
+                <RecommendationCard
+                  recommendation={rec}
+                  onClick={() => openDrawer(rec)}
+                  onDelete={handleDeleteOne}
+                />
               </div>
             ))}
           </div>
@@ -86,13 +106,23 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {recommendations?.map((rec) => (
-              <RecommendationCard key={rec.id} recommendation={rec} onClick={() => openDrawer(rec)} />
+              <RecommendationCard
+                key={rec.id}
+                recommendation={rec}
+                onClick={() => openDrawer(rec)}
+                onDelete={handleDeleteOne}
+              />
             ))}
           </div>
         )}
       </div>
 
-      <DetailDrawer recommendation={selectedRec} open={drawerOpen} onOpenChange={setDrawerOpen} />
+      <DetailDrawer
+        recommendation={selectedRec}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onDelete={handleDeleteOne}
+      />
     </div>
   );
 };
