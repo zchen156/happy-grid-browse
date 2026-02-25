@@ -22,15 +22,20 @@ export type Database = {
           created_at: string
           crowd_level: string | null
           description: string | null
+          destination: string | null
           id: string
           image_url: string | null
           location: string | null
+          name: string | null
           opening_hours: string | null
+          price_range: string | null
           rating: number | null
           source_type: string | null
           source_url: string | null
           tags: string[] | null
+          tips: string | null
           title: string
+          video_timestamp: string | null
         }
         Insert: {
           address?: string | null
@@ -39,15 +44,20 @@ export type Database = {
           created_at?: string
           crowd_level?: string | null
           description?: string | null
+          destination?: string | null
           id?: string
           image_url?: string | null
           location?: string | null
+          name?: string | null
           opening_hours?: string | null
+          price_range?: string | null
           rating?: number | null
           source_type?: string | null
           source_url?: string | null
           tags?: string[] | null
+          tips?: string | null
           title: string
+          video_timestamp?: string | null
         }
         Update: {
           address?: string | null
@@ -56,15 +66,50 @@ export type Database = {
           created_at?: string
           crowd_level?: string | null
           description?: string | null
+          destination?: string | null
           id?: string
           image_url?: string | null
           location?: string | null
+          name?: string | null
           opening_hours?: string | null
+          price_range?: string | null
           rating?: number | null
           source_type?: string | null
           source_url?: string | null
           tags?: string[] | null
+          tips?: string | null
           title?: string
+          video_timestamp?: string | null
+        }
+        Relationships: []
+      }
+      scrape_jobs: {
+        Row: {
+          created_at: string
+          error_msg: string | null
+          id: string
+          recs_added: number | null
+          status: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          error_msg?: string | null
+          id?: string
+          recs_added?: number | null
+          status?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          error_msg?: string | null
+          id?: string
+          recs_added?: number | null
+          status?: string
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
