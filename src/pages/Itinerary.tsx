@@ -11,6 +11,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { MockMap } from "@/components/itinerary/MockMap";
 import { EmptyMapState } from "@/components/itinerary/EmptyMapState";
+import { generateItinerary, type BackendItinerary } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const travelStyles = [
   { label: "Culture", emoji: "🏛️" },
@@ -38,29 +40,38 @@ interface DayPlan {
   activities: Activity[];
 }
 
-const sampleItinerary: DayPlan[] = [
-  {
-    day: 1,
-    activities: [
-      { id: "1a", time: "Morning", title: "Kinkaku-ji Temple", desc: "Kyoto's iconic Golden Pavilion", duration: "2h", cost: "$5", image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=200", lat: 35.0394, lng: 135.7292 },
-      { id: "1b", time: "Afternoon", title: "Nishiki Market", desc: "Vibrant kitchen street with local cuisine", duration: "3h", cost: "$20", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200", lat: 35.005, lng: 135.764 },
-      { id: "1c", time: "Evening", title: "Gion District Walk", desc: "Traditional geisha district at dusk", duration: "2h", cost: "Free", image: "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?w=200", lat: 35.0037, lng: 135.7755 },
-    ],
-  },
-  {
-    day: 2,
-    activities: [
-      { id: "2a", time: "Morning", title: "Fushimi Inari Shrine", desc: "Thousands of vermillion torii gates", duration: "3h", cost: "Free", image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=200", lat: 34.9671, lng: 135.7727 },
-      { id: "2b", time: "Afternoon", title: "Ramen Ichiran", desc: "Solo dining in private booths", duration: "1h", cost: "$12", image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=200", lat: 34.9689, lng: 135.7723 },
-    ],
-  },
-  {
-    day: 3,
-    activities: [
-      { id: "3a", time: "Morning", title: "Arashiyama Bamboo Grove", desc: "Walk through towering bamboo stalks", duration: "2h", cost: "Free", image: "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=200", lat: 35.0094, lng: 135.6672 },
-    ],
-  },
-];
+const TIME_SLOT_MAP: Record<string, "Morning" | "Afternoon" | "Evening"> = {
+  morning: "Morning",
+  afternoon: "Afternoon",
+  evening: "Evening",
+};
+
+function parseTimeSlot(slot: string): "Morning" | "Afternoon" | "Evening" {
+  const lower = slot.toLowerCase();
+  for (const [key, val] of Object.entries(TIME_SLOT_MAP)) {
+    if (lower.includes(key)) return val;
+  }
+  if (lower.includes("night") || lower.includes("dinner")) return "Evening";
+  if (lower.includes("lunch") || lower.includes("midday")) return "Afternoon";
+  return "Morning";
+}
+
+function mapBackendItinerary(data: BackendItinerary): DayPlan[] {
+  return data.days.map((day) => ({
+    day: day.day_number,
+    activities: day.activities.map((a, i) => ({
+      id: `${day.day_number}-${i}`,
+      time: parseTimeSlot(a.time_slot),
+      title: a.activity,
+      desc: a.description || a.tips || "",
+      duration: "",
+      cost: "",
+      image: "",
+      lat: 0,
+      lng: 0,
+    })),
+  }));
+}
 
 const ItineraryPage = () => {
   const [destination, setDestination] = useState("");
@@ -82,14 +93,25 @@ const ItineraryPage = () => {
     );
   };
 
-  const handleGenerate = useCallback(() => {
+  const { toast } = useToast();
+
+  const handleGenerate = useCallback(async () => {
     setGenerating(true);
-    setTimeout(() => {
-      setItinerary(sampleItinerary);
+    try {
+      const prefs = selectedStyles.join(", ") || "balanced mix of activities";
+      const data = await generateItinerary(destination, duration[0], prefs);
+      setItinerary(mapBackendItinerary(data));
       setSelectedDay("day-1");
+    } catch (err) {
+      toast({
+        title: "Generation failed",
+        description: err instanceof Error ? err.message : "Could not generate itinerary",
+        variant: "destructive",
+      });
+    } finally {
       setGenerating(false);
-    }, 1500);
-  }, []);
+    }
+  }, [destination, duration, selectedStyles, toast]);
 
   const activeDayIndex = parseInt(selectedDay.replace("day-", "")) - 1;
   const activeDayActivities = hasItinerary && itinerary[activeDayIndex]
@@ -230,11 +252,17 @@ const ItineraryPage = () => {
                               >
                                 <CardContent className="flex items-center gap-3 p-2.5">
                                   <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                                  <img
-                                    src={activity.image}
-                                    alt={activity.title}
-                                    className="h-10 w-10 rounded-md object-cover shrink-0"
-                                  />
+                                  {activity.image ? (
+                                    <img
+                                      src={activity.image}
+                                      alt={activity.title}
+                                      className="h-10 w-10 rounded-md object-cover shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded-md bg-secondary flex items-center justify-center shrink-0">
+                                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                  )}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
                                       <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-accent text-accent-foreground text-[9px] font-bold shrink-0">

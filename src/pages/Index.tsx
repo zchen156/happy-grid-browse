@@ -1,18 +1,10 @@
-import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { useMemo, useState } from "react";
 import { Bookmark, Map, Globe, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { DetailDrawer } from "@/components/DetailDrawer";
 import type { Recommendation } from "@/types/recommendation";
-
-const stats = [
-  { label: "Saved Spots", value: "48", icon: Bookmark, color: "text-primary" },
-  { label: "Active Itineraries", value: "3", icon: Map, color: "text-accent" },
-  { label: "Countries Visited", value: "12", icon: Globe, color: "text-primary" },
-];
 
 const Index = () => {
   const { data: recommendations, isLoading } = useRecommendations();
@@ -23,6 +15,20 @@ const Index = () => {
     setSelectedRec(rec);
     setDrawerOpen(true);
   };
+
+  const stats = useMemo(() => {
+    const count = recommendations?.length ?? 0;
+    const destinations = new Set(
+      recommendations
+        ?.map((r) => r.destination || r.location)
+        .filter(Boolean),
+    );
+    return [
+      { label: "Saved Spots", value: String(count), icon: Bookmark, color: "text-primary" },
+      { label: "Active Itineraries", value: "0", icon: Map, color: "text-accent" },
+      { label: "Destinations", value: String(destinations.size), icon: Globe, color: "text-primary" },
+    ];
+  }, [recommendations]);
 
   return (
     <div className="space-y-8">
