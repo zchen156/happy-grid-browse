@@ -10,7 +10,6 @@ import { DetailDrawer } from "@/components/DetailDrawer";
 import type { Recommendation } from "@/types/recommendation";
 
 const categories = ["All", "Restaurant", "Café", "Attraction", "Activity", "Experience", "Market"];
-const destinationTags = ["Japan", "France", "USA", "Norway", "Bali", "UK", "Greece"];
 
 const LibraryPage = () => {
   const { data: recommendations, isLoading } = useRecommendations();
@@ -27,10 +26,26 @@ const LibraryPage = () => {
     );
   };
 
+  // Derive destination tags dynamically from data
+  const destinationTags = Array.from(
+    new Set(
+      recommendations
+        ?.map((r) => r.destination || r.location)
+        .filter(Boolean) as string[]
+    )
+  ).sort();
+
   const filtered = recommendations?.filter((rec) => {
-    const matchesSearch = !searchQuery || rec.title.toLowerCase().includes(searchQuery.toLowerCase()) || rec.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      !searchQuery ||
+      rec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.destination?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "All" || rec.category === selectedCategory;
-    const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => rec.location?.includes(tag));
+    const matchesTags =
+      selectedTags.length === 0 ||
+      selectedTags.some((tag) => (rec.destination || rec.location)?.includes(tag));
     return matchesSearch && matchesCategory && matchesTags;
   });
 
