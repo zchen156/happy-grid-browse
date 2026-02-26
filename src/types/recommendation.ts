@@ -4,6 +4,7 @@ export interface Recommendation {
   name: string | null;
   description: string | null;
   image_url: string | null;
+  image_urls: string[];
   category: string;
   location: string | null;
   destination: string | null;

@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, ExternalLink, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -16,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Recommendation } from "@/types/recommendation";
 
 interface RecommendationCardProps {
@@ -34,6 +43,25 @@ export function RecommendationCard({
   onSelect,
 }: RecommendationCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const images =
+    recommendation.image_urls.length > 0
+      ? recommendation.image_urls
+      : recommendation.image_url
+        ? [recommendation.image_url]
+        : ["/placeholder.svg"];
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
+    carouselApi.on("select", onSelect);
+    onSelect();
+    return () => {
+      carouselApi.off("select", onSelect);
+    };
+  }, [carouselApi]);
 
   const hasDelete = onDelete != null;
   const hasSourceType = Boolean(recommendation.source_type);
@@ -56,12 +84,38 @@ export function RecommendationCard({
         onClick={onClick}
       >
         <div className="relative h-40">
-          <img
-            src={recommendation.image_url || "/placeholder.svg"}
-            alt={recommendation.title}
-            className="h-full w-full object-cover"
-          />
-          {/* Left: checkbox (when in Library) then category badge */}
+          <Carousel opts={{ loop: true }} setApi={setCarouselApi} className="h-full">
+            <CarouselContent className="-ml-0 h-full">
+              {images.map((url, i) => (
+                <CarouselItem key={i} className="pl-0 h-full">
+                  <img
+                    src={url}
+                    alt={`${recommendation.title} ${i + 1}`}
+                    className="h-40 w-full object-cover"
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {images.length > 1 && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <CarouselPrevious className="left-2 h-7 w-7 bg-black/40 text-white border-0 hover:bg-black/60 disabled:opacity-0" />
+                <CarouselNext className="right-2 h-7 w-7 bg-black/40 text-white border-0 hover:bg-black/60 disabled:opacity-0" />
+              </div>
+            )}
+          </Carousel>
+          {images.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+              {images.map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full transition-colors",
+                    i === currentSlide ? "bg-white" : "bg-white/50",
+                  )}
+                />
+              ))}
+            </div>
+          )}
           {onSelect != null && (
             <div
               className="absolute top-3 left-3 flex items-center z-10"
@@ -79,7 +133,6 @@ export function RecommendationCard({
           >
             {recommendation.category}
           </Badge>
-          {/* source_type: top-right only when no delete; otherwise below category */}
           {hasSourceType && (
             <Badge
               variant="secondary"
@@ -88,7 +141,6 @@ export function RecommendationCard({
               {recommendation.source_type}
             </Badge>
           )}
-          {/* Right: delete only */}
           {hasDelete && (
             <div
               className="absolute top-3 right-3 z-10"
