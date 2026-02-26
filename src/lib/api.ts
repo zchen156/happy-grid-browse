@@ -16,6 +16,7 @@ interface BackendRecommendation {
   address: string | null;
   tags: string[];
   video_timestamp: string | null;
+  image_url: string | null;
 }
 
 interface BackendItineraryActivity {
@@ -53,7 +54,7 @@ function mapRecommendation(r: BackendRecommendation): Recommendation {
     title: r.name,
     name: r.name,
     description: r.description || null,
-    image_url: null,
+    image_url: r.image_url ?? null,
     category: r.category,
     location: r.destination,
     destination: r.destination,
