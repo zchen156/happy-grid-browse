@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MapPin, Clock, DollarSign, Star, Users, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,17 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import type { Recommendation } from "@/types/recommendation";
 
 interface DetailDrawerProps {
@@ -20,12 +32,14 @@ interface DetailDrawerProps {
 
 export function DetailDrawer({ recommendation, open, onOpenChange, onDelete }: DetailDrawerProps) {
   const navigate = useNavigate();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   if (!recommendation) return null;
 
   const handleDelete = async () => {
     if (onDelete) {
       await onDelete(recommendation.id);
       onOpenChange(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -149,15 +163,36 @@ export function DetailDrawer({ recommendation, open, onOpenChange, onDelete }: D
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3 pt-2">
             {onDelete && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                className="gap-1"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
+              <>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="gap-1"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete recommendation?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will remove it from your library.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className={buttonVariants({ variant: "destructive" })}
+                        onClick={handleDelete}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
             {recommendation.source_url && (
               <Button

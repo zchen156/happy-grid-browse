@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Grid3X3, List, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Grid3X3, List, Loader2, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { DetailDrawer } from "@/components/DetailDrawer";
@@ -24,6 +35,7 @@ const LibraryPage = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -36,6 +48,7 @@ const LibraryPage = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
+    setBulkDeleteDialogOpen(false);
     setIsDeleting(true);
     try {
       await deleteRecommendations(Array.from(selectedIds));
@@ -142,16 +155,41 @@ const LibraryPage = () => {
           </div>
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDeleteSelected}
-                disabled={isDeleting}
-                className="gap-1"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete selected ({selectedIds.size})
-              </Button>
+              <>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  disabled={isDeleting}
+                  className="gap-1"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Delete selected ({selectedIds.size})
+                </Button>
+                <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete selected?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will remove {selectedIds.size} recommendation{selectedIds.size === 1 ? "" : "s"} from your library. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className={buttonVariants({ variant: "destructive" })}
+                        onClick={handleDeleteSelected}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
             <div className="flex items-center gap-1 border rounded-lg p-1">
               <Button
