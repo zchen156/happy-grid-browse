@@ -25,6 +25,7 @@ export type Database = {
           destination: string | null
           id: string
           image_url: string | null
+          image_urls: string[] | null
           location: string | null
           name: string | null
           opening_hours: string | null
@@ -47,6 +48,7 @@ export type Database = {
           destination?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           location?: string | null
           name?: string | null
           opening_hours?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           destination?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           location?: string | null
           name?: string | null
           opening_hours?: string | null

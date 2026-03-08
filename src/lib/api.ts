@@ -1,24 +1,6 @@
-import type { Recommendation } from "@/types/recommendation";
-
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-// -- Backend shapes (what the Tripost API returns) --
-
-interface BackendRecommendation {
-  id: string;
-  source_url: string;
-  destination: string;
-  category: string;
-  name: string;
-  description: string;
-  tips: string | null;
-  price_range: string | null;
-  address: string | null;
-  tags: string[];
-  video_timestamp: string | null;
-  image_url: string | null;
-  image_urls: string[];
-}
+// -- Backend shapes --
 
 interface BackendItineraryActivity {
   time_slot: string;
@@ -47,40 +29,7 @@ interface ScrapeResponse {
   posts_processed: number;
 }
 
-// -- Field mapping: backend -> frontend Recommendation --
-
-function mapRecommendation(r: BackendRecommendation): Recommendation {
-  return {
-    id: r.id,
-    title: r.name,
-    name: r.name,
-    description: r.description || null,
-    image_url: r.image_url ?? null,
-    image_urls:
-      r.image_urls && r.image_urls.length > 0
-        ? r.image_urls
-        : r.image_url
-          ? [r.image_url]
-          : [],
-    category: r.category,
-    location: r.destination,
-    destination: r.destination,
-    tags: r.tags ?? [],
-    source_url: r.source_url || null,
-    source_type: null,
-    rating: null,
-    cost_range: r.price_range ?? null,
-    price_range: r.price_range ?? null,
-    opening_hours: null,
-    crowd_level: null,
-    address: r.address ?? null,
-    tips: r.tips ?? null,
-    video_timestamp: r.video_timestamp ?? null,
-    created_at: new Date().toISOString(),
-  };
-}
-
-// -- API wrappers --
+// -- Generic fetch helper --
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -97,26 +46,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function fetchRecommendations(
-  destination?: string,
-): Promise<Recommendation[]> {
-  const params = destination ? `?destination=${encodeURIComponent(destination)}` : "";
-  const data = await apiFetch<BackendRecommendation[]>(
-    `/api/recommendations${params}`,
-  );
-  return data.map(mapRecommendation);
-}
-
-export async function fetchDestinations(): Promise<Record<string, number>> {
-  return apiFetch<Record<string, number>>("/api/destinations");
-}
-
-export async function deleteRecommendations(ids: string[]): Promise<{ removed: number }> {
-  return apiFetch<{ removed: number }>("/api/recommendations", {
-    method: "DELETE",
-    body: JSON.stringify({ ids }),
-  });
-}
+// -- Backend-only operations (require server-side processing) --
 
 export async function scrapeUrls(
   urls: string[],

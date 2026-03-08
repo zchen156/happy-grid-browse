@@ -19,7 +19,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { DetailDrawer } from "@/components/DetailDrawer";
-import { deleteRecommendations } from "@/lib/api";
+import { deleteRecommendations } from "@/lib/supabase-api";
 import type { Recommendation } from "@/types/recommendation";
 
 const categories = ["All", "Restaurant", "Café", "Attraction", "Activity", "Experience", "Market"];
