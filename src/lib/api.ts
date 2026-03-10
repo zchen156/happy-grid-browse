@@ -62,6 +62,7 @@ export async function generateItinerary(
   destination: string,
   durationDays: number,
   preferences: string,
+  recommendationIds?: string[],
 ): Promise<BackendItinerary> {
   return apiFetch<BackendItinerary>("/api/itinerary", {
     method: "POST",
@@ -69,6 +70,7 @@ export async function generateItinerary(
       destination,
       duration_days: durationDays,
       preferences,
+      ...(recommendationIds?.length ? { recommendation_ids: recommendationIds } : {}),
     }),
   });
 }

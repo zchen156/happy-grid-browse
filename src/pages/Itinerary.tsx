@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { MapPin, Clock, DollarSign, Sparkles, GripVertical, Search, Map, List, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { MockMap } from "@/components/itinerary/MockMap";
 import { EmptyMapState } from "@/components/itinerary/EmptyMapState";
 import { generateItinerary, type BackendItinerary } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useRecommendations } from "@/hooks/use-recommendations";
+import type { Recommendation } from "@/types/recommendation";
 
 const travelStyles = [
   { label: "Culture", emoji: "🏛️" },
@@ -73,7 +76,51 @@ function mapBackendItinerary(data: BackendItinerary): DayPlan[] {
   }));
 }
 
+const SLOTS: ("Morning" | "Afternoon" | "Evening")[] = ["Morning", "Afternoon", "Evening"];
+
+function buildItineraryFromRecommendations(recs: Recommendation[]): DayPlan[] {
+  if (recs.length === 0) return [];
+  const activitiesPerDay = 3; // Morning, Afternoon, Evening
+  const days: DayPlan[] = [];
+  let dayNumber = 1;
+  let slotIndex = 0;
+  let currentDayActivities: Activity[] = [];
+
+  recs.forEach((rec, i) => {
+    const time = SLOTS[slotIndex];
+    const activity: Activity = {
+      id: rec.id,
+      time,
+      title: rec.title || rec.name || "Saved spot",
+      desc: rec.description || rec.tips || "",
+      duration: "",
+      cost: rec.cost_range || rec.price_range || "",
+      image: rec.image_url || "",
+      lat: 0,
+      lng: 0,
+    };
+    currentDayActivities.push(activity);
+    slotIndex++;
+    if (slotIndex >= activitiesPerDay) {
+      days.push({ day: dayNumber, activities: currentDayActivities });
+      dayNumber++;
+      slotIndex = 0;
+      currentDayActivities = [];
+    }
+  });
+
+  if (currentDayActivities.length > 0) {
+    days.push({ day: dayNumber, activities: currentDayActivities });
+  }
+  return days;
+}
+
 const ItineraryPage = () => {
+  const location = useLocation();
+  const { data: recommendations, isLoading: recommendationsLoading } = useRecommendations();
+  const selectedIdsFromLibrary = (location.state as { selectedRecommendationIds?: string[] } | null)
+    ?.selectedRecommendationIds;
+
   const [destination, setDestination] = useState("");
   const [duration, setDuration] = useState([5]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["Culture", "Foodie"]);
@@ -82,10 +129,32 @@ const ItineraryPage = () => {
   const [hoveredActivity, setHoveredActivity] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>("day-1");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [hasAppliedLibrarySelections, setHasAppliedLibrarySelections] = useState(false);
   const isMobile = useIsMobile();
 
   const hasItinerary = itinerary.length > 0;
   const hasDestination = destination.trim().length > 0;
+
+  // When arriving from Library with selected spots, build itinerary from them and prefill destination
+  useEffect(() => {
+    if (
+      !selectedIdsFromLibrary?.length ||
+      !recommendations?.length ||
+      hasAppliedLibrarySelections
+    )
+      return;
+    const selected = recommendations.filter((r) => selectedIdsFromLibrary.includes(r.id));
+    if (selected.length === 0) return;
+    setHasAppliedLibrarySelections(true);
+    const destinationFromRecs =
+      selected[0].destination || selected[0].location || selected[0].address || "";
+    // Always set a destination so the Generate button works and map shows (fallback if recs have none)
+    setDestination(destinationFromRecs.trim() || "My saved spots");
+    const days = buildItineraryFromRecommendations(selected);
+    setItinerary(days);
+    if (days.length > 0) setDuration([days.length]);
+    setSelectedDay("day-1");
+  }, [selectedIdsFromLibrary, recommendations, hasAppliedLibrarySelections]);
 
   const toggleStyle = (style: string) => {
     setSelectedStyles((prev) =>
@@ -99,7 +168,12 @@ const ItineraryPage = () => {
     setGenerating(true);
     try {
       const prefs = selectedStyles.join(", ") || "balanced mix of activities";
-      const data = await generateItinerary(destination, duration[0], prefs);
+      const data = await generateItinerary(
+        destination,
+        duration[0],
+        prefs,
+        selectedIdsFromLibrary ?? undefined,
+      );
       setItinerary(mapBackendItinerary(data));
       setSelectedDay("day-1");
     } catch (err) {
@@ -111,7 +185,7 @@ const ItineraryPage = () => {
     } finally {
       setGenerating(false);
     }
-  }, [destination, duration, selectedStyles, toast]);
+  }, [destination, duration, selectedStyles, selectedIdsFromLibrary, toast]);
 
   const activeDayIndex = parseInt(selectedDay.replace("day-", "")) - 1;
   const activeDayActivities = hasItinerary && itinerary[activeDayIndex]
@@ -203,10 +277,21 @@ const ItineraryPage = () => {
       <ScrollArea className="flex-1">
         {!hasItinerary ? (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            <MapPin className="h-10 w-10 text-muted-foreground/40 mb-3" />
-            <p className="text-sm text-muted-foreground font-display">
-              Enter a destination and generate your itinerary to see the timeline here.
-            </p>
+            {selectedIdsFromLibrary?.length && recommendationsLoading ? (
+              <>
+                <Loader2 className="h-10 w-10 text-muted-foreground/40 mb-3 animate-spin" />
+                <p className="text-sm text-muted-foreground font-display">
+                  Loading your saved spots…
+                </p>
+              </>
+            ) : (
+              <>
+                <MapPin className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground font-display">
+                  Enter a destination and generate your itinerary to see the timeline here.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <Accordion
