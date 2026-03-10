@@ -22,7 +22,18 @@ import { DetailDrawer } from "@/components/DetailDrawer";
 import { deleteRecommendations } from "@/lib/supabase-api";
 import type { Recommendation } from "@/types/recommendation";
 
-const categories = ["All", "Restaurant", "Café", "Attraction", "Activity", "Experience", "Market"];
+const categories = [
+  "All",
+  "Restaurants",
+  "Cafes",
+  "Bars",
+  "Attractions",
+  "Activities",
+  "Shopping",
+  "Outdoors",
+  "Wellness",
+  "Events",
+];
 
 const LibraryPage = () => {
   const queryClient = useQueryClient();
