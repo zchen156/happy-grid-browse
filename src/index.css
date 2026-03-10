@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
 @layer base {
   :root {
@@ -99,4 +99,96 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mapbox destination markers */
+.destination-marker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
+  padding: 4px 10px 4px 4px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+
+.destination-marker:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.destination-marker .marker-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.destination-marker .marker-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.destination-marker .marker-count {
+  background: hsl(var(--accent) / 0.15);
+  color: hsl(var(--accent));
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Mapbox popup styles */
+.mapbox-destination-popup .mapboxgl-popup-content {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.mapbox-destination-popup .mapboxgl-popup-tip {
+  border-top-color: hsl(var(--card));
+}
+
+.mapbox-destination-popup .popup-content {
+  text-align: center;
+}
+
+.mapbox-destination-popup .popup-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin: 0 0 4px;
+}
+
+.mapbox-destination-popup .popup-stats {
+  font-size: 12px;
+  color: hsl(var(--primary));
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.mapbox-destination-popup .popup-spots {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  margin: 4px 0 0;
+  max-width: 200px;
 }

@@ -1,12 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Bookmark, Map, Globe, ChevronRight } from "lucide-react";
+import { Bookmark, Map, Globe, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { DetailDrawer } from "@/components/DetailDrawer";
 import { SplitText } from "@/components/animations/SplitText";
+import { TopDestinationsMap } from "@/components/TopDestinationsMap";
 import { deleteRecommendations } from "@/lib/supabase-api";
 import type { Recommendation } from "@/types/recommendation";
 
@@ -84,70 +85,15 @@ const Index = () => {
       </motion.div>
 
       {/* Recently Added */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <SplitText
-            text="Recently Added"
-            tag="h2"
-            className="text-lg font-display font-bold text-foreground"
-            splitType="chars"
-            staggerDelay={0.025}
-            duration={0.4}
-          />
-          <a href="/library" className="text-sm text-primary hover:underline flex items-center gap-1">
-            View all <ChevronRight className="h-3 w-3" />
-          </a>
-        </div>
-        {isLoading ? (
-          <div className="flex gap-4 overflow-hidden">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 w-64 shrink-0 rounded-lg bg-secondary animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {recommendations?.slice(0, 5).map((rec) => (
-              <div key={rec.id} className="w-64 shrink-0">
-                <RecommendationCard
-                  recommendation={rec}
-                  onClick={() => openDrawer(rec)}
-                  onDelete={handleDeleteOne}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <RecentlyAdded
+        recommendations={recommendations}
+        isLoading={isLoading}
+        onCardClick={openDrawer}
+        onDelete={handleDeleteOne}
+      />
 
-      {/* Discover */}
-      <div>
-        <SplitText
-          text="Discover Your Library"
-          tag="h2"
-          className="text-lg font-display font-bold text-foreground mb-4"
-          splitType="words"
-          staggerDelay={0.08}
-          duration={0.5}
-        />
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 rounded-lg bg-secondary animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recommendations?.map((rec) => (
-              <RecommendationCard
-                key={rec.id}
-                recommendation={rec}
-                onClick={() => openDrawer(rec)}
-                onDelete={handleDeleteOne}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Top Destinations Map */}
+      <TopDestinationsMap recommendations={recommendations} isLoading={isLoading} />
 
       <DetailDrawer
         recommendation={selectedRec}
@@ -158,5 +104,82 @@ const Index = () => {
     </div>
   );
 };
+
+function RecentlyAdded({
+  recommendations,
+  isLoading,
+  onCardClick,
+  onDelete,
+}: {
+  recommendations: Recommendation[] | undefined;
+  isLoading: boolean;
+  onCardClick: (rec: Recommendation) => void;
+  onDelete: (id: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = 280;
+    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
+  };
+
+  return (
+    <div className="grid grid-cols-1">
+      <div className="flex items-center justify-between mb-4">
+        <SplitText
+          text="Recently Added"
+          tag="h2"
+          className="text-lg font-display font-bold text-foreground"
+          splitType="chars"
+          staggerDelay={0.025}
+          duration={0.4}
+        />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => scroll("left")}
+            aria-label="Scroll left"
+            className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => scroll("right")}
+            aria-label="Scroll right"
+            className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <a href="/library" className="text-sm text-primary hover:underline flex items-center gap-1 ml-1">
+            View all <ChevronRight className="h-3 w-3" />
+          </a>
+        </div>
+      </div>
+      {isLoading ? (
+        <div className="flex gap-4 overflow-hidden">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 w-64 shrink-0 rounded-lg bg-secondary animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
+        >
+          {recommendations?.slice(0, 10).map((rec) => (
+            <div key={rec.id} className="w-64 shrink-0">
+              <RecommendationCard
+                recommendation={rec}
+                onClick={() => onCardClick(rec)}
+                onDelete={onDelete}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default Index;
