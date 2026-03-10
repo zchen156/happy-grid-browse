@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Grid3X3, List, Loader2, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Grid3X3, List, Loader2, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ const categories = [
 ];
 
 const LibraryPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: recommendations, isLoading } = useRecommendations();
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
@@ -167,6 +169,15 @@ const LibraryPage = () => {
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
               <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => navigate("/itinerary", { state: { selectedRecommendationIds: Array.from(selectedIds) } })}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add to Itinerary
+                </Button>
                 <Button
                   variant="destructive"
                   size="sm"
