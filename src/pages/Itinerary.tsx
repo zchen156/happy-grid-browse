@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { MockMap } from "@/components/itinerary/MockMap";
+import { ItineraryMap } from "@/components/itinerary/ItineraryMap";
 import { EmptyMapState } from "@/components/itinerary/EmptyMapState";
 import { generateItinerary, type BackendItinerary } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -127,6 +127,7 @@ const ItineraryPage = () => {
   const [generating, setGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<DayPlan[]>([]);
   const [hoveredActivity, setHoveredActivity] = useState<string | null>(null);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>("day-1");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [hasAppliedLibrarySelections, setHasAppliedLibrarySelections] = useState(false);
@@ -330,9 +331,11 @@ const ItineraryPage = () => {
                                 key={activity.id}
                                 onMouseEnter={() => setHoveredActivity(activity.id)}
                                 onMouseLeave={() => setHoveredActivity(null)}
+                                onClick={() => setSelectedActivityId((prev) => (prev === activity.id ? null : activity.id))}
                                 className={cn(
-                                  "border-border cursor-grab active:cursor-grabbing transition-shadow my-1",
-                                  hoveredActivity === activity.id && "ring-2 ring-accent/50 shadow-md"
+                                  "border-border cursor-pointer transition-shadow my-1",
+                                  hoveredActivity === activity.id && "ring-2 ring-accent/50 shadow-md",
+                                  selectedActivityId === activity.id && "ring-2 ring-primary shadow-lg bg-primary/5"
                                 )}
                               >
                                 <CardContent className="flex items-center gap-3 p-2.5">
@@ -385,10 +388,12 @@ const ItineraryPage = () => {
   );
 
   const MapPanel = hasItinerary && hasDestination ? (
-    <MockMap
+    <ItineraryMap
       activities={activeDayActivities}
       activityIndexMap={activityIndexMap}
       hoveredActivity={hoveredActivity}
+      selectedActivityId={selectedActivityId}
+      destination={destination.trim() || undefined}
     />
   ) : (
     <EmptyMapState />

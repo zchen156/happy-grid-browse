@@ -92,7 +92,7 @@ const Index = () => {
         onDelete={handleDeleteOne}
       />
 
-      {/* Top Destinations Map */}
+      {/* Top cities & countries map */}
       <TopDestinationsMap recommendations={recommendations} isLoading={isLoading} />
 
       <DetailDrawer
