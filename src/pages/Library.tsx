@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Grid3X3, List, Loader2, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -38,13 +38,17 @@ const categories = [
 
 const LibraryPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { data: recommendations, isLoading } = useRecommendations();
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+    const dest = (location.state as { destination?: string } | null)?.destination;
+    return dest ? [dest] : [];
+  });
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);

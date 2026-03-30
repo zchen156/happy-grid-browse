@@ -195,6 +195,12 @@
   font-weight: 700;
   color: hsl(var(--foreground));
   margin: 0 0 4px;
+  cursor: pointer;
+}
+
+.mapbox-destination-popup .popup-title:hover {
+  color: hsl(var(--primary));
+  text-decoration: underline;
 }
 
 .mapbox-destination-popup .popup-stats {

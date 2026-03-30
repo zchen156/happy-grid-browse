@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,7 @@ interface TopDestinationsMapProps {
 }
 
 export function TopDestinationsMap({ recommendations, isLoading }: TopDestinationsMapProps) {
+  const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -207,6 +209,16 @@ export function TopDestinationsMap({ recommendations, isLoading }: TopDestinatio
           ${spotsPreview ? `<p class="popup-spots">${spotsPreview}${moreCount}</p>` : ""}
         </div>
       `);
+
+      popup.on("open", () => {
+        const titleEl = popup.getElement()?.querySelector(".popup-title") as HTMLElement | null;
+        if (titleEl) {
+          titleEl.addEventListener("click", () => {
+            popup.remove();
+            navigate("/library", { state: { destination: p.destination } });
+          });
+        }
+      });
 
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([c.lng, c.lat])
