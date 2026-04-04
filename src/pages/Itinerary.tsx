@@ -15,7 +15,6 @@ import { EmptyMapState } from "@/components/itinerary/EmptyMapState";
 import { generateItinerary, type BackendItinerary } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useRecommendations } from "@/hooks/use-recommendations";
-import type { Recommendation } from "@/types/recommendation";
 
 const travelStyles = [
   { label: "Culture", emoji: "🏛️" },
@@ -76,44 +75,6 @@ function mapBackendItinerary(data: BackendItinerary): DayPlan[] {
   }));
 }
 
-const SLOTS: ("Morning" | "Afternoon" | "Evening")[] = ["Morning", "Afternoon", "Evening"];
-
-function buildItineraryFromRecommendations(recs: Recommendation[]): DayPlan[] {
-  if (recs.length === 0) return [];
-  const activitiesPerDay = 3; // Morning, Afternoon, Evening
-  const days: DayPlan[] = [];
-  let dayNumber = 1;
-  let slotIndex = 0;
-  let currentDayActivities: Activity[] = [];
-
-  recs.forEach((rec, i) => {
-    const time = SLOTS[slotIndex];
-    const activity: Activity = {
-      id: rec.id,
-      time,
-      title: rec.title || rec.name || "Saved spot",
-      desc: rec.description || rec.tips || "",
-      duration: "",
-      cost: rec.cost_range || rec.price_range || "",
-      image: rec.image_url || "",
-      lat: 0,
-      lng: 0,
-    };
-    currentDayActivities.push(activity);
-    slotIndex++;
-    if (slotIndex >= activitiesPerDay) {
-      days.push({ day: dayNumber, activities: currentDayActivities });
-      dayNumber++;
-      slotIndex = 0;
-      currentDayActivities = [];
-    }
-  });
-
-  if (currentDayActivities.length > 0) {
-    days.push({ day: dayNumber, activities: currentDayActivities });
-  }
-  return days;
-}
 
 const ItineraryPage = () => {
   const location = useLocation();
@@ -136,7 +97,8 @@ const ItineraryPage = () => {
   const hasItinerary = itinerary.length > 0;
   const hasDestination = destination.trim().length > 0;
 
-  // When arriving from Library with selected spots, build itinerary from them and prefill destination
+  // When arriving from Library with selected spots, only auto-fill the destination field.
+  // Trip duration and travel style are left for the user to configure before generating.
   useEffect(() => {
     if (
       !selectedIdsFromLibrary?.length ||
@@ -147,14 +109,8 @@ const ItineraryPage = () => {
     const selected = recommendations.filter((r) => selectedIdsFromLibrary.includes(r.id));
     if (selected.length === 0) return;
     setHasAppliedLibrarySelections(true);
-    const destinationFromRecs =
-      selected[0].destination || selected[0].location || selected[0].address || "";
-    // Always set a destination so the Generate button works and map shows (fallback if recs have none)
-    setDestination(destinationFromRecs.trim() || "My saved spots");
-    const days = buildItineraryFromRecommendations(selected);
-    setItinerary(days);
-    if (days.length > 0) setDuration([days.length]);
-    setSelectedDay("day-1");
+    const dest = selected[0].destination || selected[0].location || selected[0].address || "";
+    setDestination(dest.trim() || "My saved spots");
   }, [selectedIdsFromLibrary, recommendations, hasAppliedLibrarySelections]);
 
   const toggleStyle = (style: string) => {
@@ -220,6 +176,12 @@ const ItineraryPage = () => {
               className="pl-9"
             />
           </div>
+          {selectedIdsFromLibrary?.length ? (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-accent font-semibold">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              {selectedIdsFromLibrary.length} saved spot{selectedIdsFromLibrary.length !== 1 ? "s" : ""} selected from Library
+            </div>
+          ) : null}
         </div>
 
         <div>
@@ -283,6 +245,16 @@ const ItineraryPage = () => {
                 <Loader2 className="h-10 w-10 text-muted-foreground/40 mb-3 animate-spin" />
                 <p className="text-sm text-muted-foreground font-display">
                   Loading your saved spots…
+                </p>
+              </>
+            ) : selectedIdsFromLibrary?.length ? (
+              <>
+                <Sparkles className="h-10 w-10 text-accent/60 mb-3" />
+                <p className="text-sm font-display font-semibold text-foreground mb-1">
+                  {selectedIdsFromLibrary.length} spot{selectedIdsFromLibrary.length !== 1 ? "s" : ""} ready to plan
+                </p>
+                <p className="text-xs text-muted-foreground font-display">
+                  Set your trip duration and travel style above, then click Generate.
                 </p>
               </>
             ) : (
